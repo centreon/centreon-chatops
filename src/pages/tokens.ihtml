@@ -1,0 +1,137 @@
+<div>
+  {if $errormsg !== ''}
+  <div class='error-msg'>
+    {$errormsg}
+  </div>
+  {/if}
+  <table class="ToolbarTable table">
+    <tr class="ToolbarTR">
+      <td><a href="#" id="add-token" class="btc bt_success">Add</a></td>
+    </tr>
+  </table>
+  <table class="ListTable">
+    <thead>
+      <tr class="ListHeader">
+        <th class="ListColHeaderLeft">Team chat type</th>
+        <th class="ListColHeaderLeft">Token</th>
+        <th class="ListColHeaderLeft">Created at</th>
+        <th class="ListColHeaderCenter">Active</th>
+        <th class="ListColHeaderCenter">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {foreach from=$tokens item=token name=token}
+      {if $smarty.foreach.token.index % 2 == 0}
+        {assign var="lineClass" value="list_one"}
+      {else}
+        {assign var="lineClass" value="list_two"}
+      {/if}
+      <tr class="{$lineClass}">
+        <td class="ListColLeft">{$token.client}</td>
+        <td class="ListColLeft">{$token.token}</td>
+        <td class="ListColLeft" data-datetime="{$token.create_at}"></td>
+        <td class="ListColCenter">
+        {if $token.active == 1}
+          <span class="badge service_ok">Active</span>
+        {else}
+          <span class="badge service_critical">Deactive</span>
+        {/if}
+        </td>
+        <td class="ListColCenter">
+        {if $token.active == 1}
+          <a href="#" class="token-action" data-action="deactivate" data-tokenId="{$token.id}">
+            <img src="img/icons/disabled.png" class="ico-14 margin_right" border="0" alt="Deactivate">
+          </a>
+        {else}
+          <a href="#" class="token-action" data-action="activate" data-tokenId="{$token.id}">
+            <img src="img/icons/enabled.png" class="ico-14 margin_right" border="0" alt="Activate">
+          </a>
+        {/if}
+          <a href='#' class="token-delete" data-action="delete" data-tokenId="{$token.id}">
+            <img src="img/icons/delete.png" class="ico-14 margin_right" border="0" alt="Delete">
+          </a>
+        </td>
+      </tr>
+    {/foreach}
+    </tbody>
+  </table>
+</div>
+<script src="./include/common/javascript/moment-with-locales.js"></script>
+{literal}
+<script>
+var addToken = jQuery('<div />')
+  .html(`<h3>Add a token</h3>
+  <form method='post'>
+  <input type="hidden" name="action" value="add">
+  <div style="margin: 2px">
+    Client type : <select name="client">
+      <option name="mattermost">mattermost</option>
+    </select>
+  </div>
+  <div style="margin: 2px">
+    Token : <input type="text" name="token" />
+  </div>
+  <div style="margin-top: 8px; text-align: center;">
+    <button class="btc bt_success" type="submit">Add</button>
+    &nbsp;<button class="btc bt_default" onclick="addToken.centreonPopin('close')">Cancel</button>
+  </div>
+  </form>`)
+  .css('position', 'relative');
+
+var modalDelete = jQuery('<div />')
+  .html(`<h3>Add a token</h3>
+  <form method='post'>
+  <input type="hidden" name="action" value="delete">
+  <input type="hidden" name="tokenid" id="delete-tokenid" value="">
+  <div style="margin: 2px">
+    Are you sure to delete the token ?
+  </div>
+  <div style="margin-top: 8px; text-align: center;">
+    <button class="btc bt_danger" type="submit">Delete</button>
+    &nbsp;<button class="btc bt_default" onclick="addToken.centreonPopin('close')">Cancel</button>
+  </div>
+  </form>`)
+  .css('position', 'relative');
+jQuery(function () {
+  addToken.centreonPopin({
+    open: false
+  });
+
+  modalDelete.centreonPopin({
+    open: false
+  });
+
+  jQuery('[data-datetime]').each(function (idx, element) {
+    var date = moment(jQuery(element).data('datetime'));
+    jQuery(element).text(date.format('LLLL'));
+  });
+
+  jQuery('#add-token').on('click', function (event) {
+    event.preventDefault();
+    addToken.centreonPopin('open');
+  });
+
+  jQuery('.token-action').on('click', function (event) {
+    event.preventDefault();
+    var tmpForm = jQuery('<form>').attr('method', 'post')
+    var data = jQuery(event.currentTarget).data();
+    Object.keys(data).each(function (key) {
+      jQuery('<input>')
+        .attr('name', key)
+        .attr('value', data[key])
+        .appendTo(tmpForm);
+    });
+    tmpForm.appendTo('body');
+    tmpForm.submit();
+  });
+
+  jQuery('.token-delete').on('click', function (event) {
+    event.preventDefault();
+    var tokenid = jQuery(event.currentTarget).data('tokenid');
+
+    jQuery('#delete-tokenid').val(tokenid);
+    modalDelete.centreonPopin('open');
+  });
+});
+</script>
+{/literal}

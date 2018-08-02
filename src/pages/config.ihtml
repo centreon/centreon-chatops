@@ -1,0 +1,43 @@
+{if $errormsg !== ''}
+<div class='error-msg'>
+  {$errormsg}
+</div>
+{/if}
+<form method='POST'>
+  <div id="validFormTop">
+    <p class="oreonbutton">
+      <input class="btc bt_success" name="submitA" value="Save" type="submit">
+      &nbsp;&nbsp;&nbsp;
+      <input class="btc bt_default" name="reset" value="Reset" type="reset">
+    </p>
+  </div>
+  <div>
+    <table class="formTable table">
+      <tr class="ListHeader">
+        <td class="FormHeader" colspan="2">
+          <h3>| ChatOps configuration</h3>
+        </td>
+      </tr>
+      <tr class="list_lvl_1">
+        <td class="ListColLvl1_name" colspan="2">
+          <h4>General</h4>
+        </td>
+      </tr>
+      <tr class="list_one">
+        <td class="FormRowField">
+          Command Name&nbsp;<font color="red" size="1">*</font>
+        </td>
+        <td class="FormRowValue">
+          <input size="35" name="command_name" type="text" value={$command_name}>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div id="validForm">
+    <p class="oreonbutton">
+      <input class="btc bt_success" name="submitA" value="Save" type="submit">
+      &nbsp;&nbsp;&nbsp;
+      <input class="btc bt_default" name="reset" value="Reset" type="reset">
+    </p>
+  </div>
+</form>
