@@ -1,3 +1,15 @@
+## 1.0.0-beta.2
+##### *Aug, 23 2018*
+
+### Breaking Change
+
+N/A
+
+#### Commands
+
+* [realtime] Fix the list status service command
+* [realtime] Add the filter status in list status service command
+
 ## 1.0.0-beta.1
 ##### *Jul, 30 2018*
 

@@ -25,14 +25,15 @@ use \ChatOpsModule\Command\ListStatus;
 
 class Service extends AbstractCommand
 {
-    protected $commandFormat = '^(limit=\d+\s*|host=[\w-]+\s*|service=[\w-]+\s*){0,3}(.*)$';
+    protected $commandFormat = '^(limit=\d+\s*|host=[\w-]+\s*|service=[\w-]+\s*|status=[\w,-]+\s*){0,4}(.*)$';
     protected $commands = array('service', 'svc');
     protected $subcommand = true;
     protected $help = '[limit=5] [host=host] [service=service]';
     protected $helpDescription = array(
       'limit' => 'The number of element returned (default: 5)',
       'host' => 'Filter by host',
-      'service' => 'Filter by service'
+      'service' => 'Filter by service',
+      'status' => 'Filter by status (ok, warning, critical, unkonwn, pending), for multiple status separate by comma'
     );
 
     protected $status = array(
@@ -59,9 +60,10 @@ class Service extends AbstractCommand
       /* Parse argument */
         $arguments = $this->getArguments('', $comment);
         $params = array();
+        $filterByState = false;
         $query = 'SELECT h.name as hostname, s.description, s.state, s.output, s.last_check, s.last_hard_state_change
             FROM hosts h, services s
-            WHERE s.enabled = 1 AND s.state IN (1, 2, 3) AND s.state_type = 1';
+            WHERE s.enabled = 1 AND s.state_type = 1 AND h.host_id = s.host_id';
         foreach ($arguments as $argument) {
             if (preg_match('/^limit=(\d+)$/', $argument, $matches)) {
                 $limit = $matches[1];
@@ -71,7 +73,43 @@ class Service extends AbstractCommand
             } elseif (preg_match('/^service=([\w-]+)$/', $argument, $matches)) {
                 $query .= ' AND s.description LIKE ?';
                 $params[] = '%' . $matches[1] . '%';
+            } elseif (preg_match('/^status=([\w,-]+)$/', $argument, $matches)) {
+                $status = explode(',', $matches[1]);
+                $filterStatus = '';
+                foreach ($status as $state) {
+                    $stateCode = null;
+                    switch (strtolower($state)) {
+                        case 'critical':
+                            $stateCode = 2;
+                            break;
+                        case 'warning':
+                            $stateCode = 1;
+                            break;
+                        case 'unknown':
+                            $stateCode = 3;
+                            break;
+                        case 'ok':
+                            $stateCode = 0;
+                            break;
+                        case 'pending':
+                            $stateCode = 4;
+                            break;
+                    }
+                    if (!is_null($stateCode)) {
+                        if ($filterStatus !== '') {
+                            $filterStatus .= ' OR ';
+                        }
+                        $filterStatus .= 's.state = ' . $stateCode;
+                    }
+                }
+                if ($filterStatus !== '') {
+                    $filterByState = true;
+                    $query .= ' AND (' . $filterStatus . ')';
+                }
             }
+        }
+        if (!$filterByState) {
+            $query .= ' AND s.state IN (1, 2, 3)';
         }
 
         $query .= ' ORDER BY s.last_check DESC

@@ -42,6 +42,10 @@ rm -rf $RPM_BUILD_ROOT
 %{centreon_www}/modules/%{name}
 
 %changelog
+* Tue Aug 23 2018 Centreon Team 1.0.0-beta.2
+- Command: [realtime] Fix the list status service command
+- Comment: [realtime] Add the filter status in list status service command
+
 * Mon Jul 30 2018 Centreon Team 1.0.0-beta.1
 - Impletation of Mattermost connector
 - Command: [realtime] Add listing of no ok host
