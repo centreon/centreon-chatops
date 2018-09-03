@@ -115,7 +115,7 @@ jQuery(function () {
     event.preventDefault();
     var tmpForm = jQuery('<form>').attr('method', 'post')
     var data = jQuery(event.currentTarget).data();
-    Object.keys(data).each(function (key) {
+    Object.keys(data).forEach(function (key) {
       jQuery('<input>')
         .attr('name', key)
         .attr('value', data[key])

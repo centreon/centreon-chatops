@@ -68,11 +68,11 @@ class Service extends AbstractCommand
             if (preg_match('/^limit=(\d+)$/', $argument, $matches)) {
                 $limit = $matches[1];
             } elseif (preg_match('/^host=([\w-]+)$/', $argument, $matches)) {
-                $query .= ' AND h.name LIKE ?';
-                $params[] = '%' . $matches[1] . '%';
+                $query .= ' AND h.name LIKE :host';
+                $params['host'] = '%' . $matches[1] . '%';
             } elseif (preg_match('/^service=([\w-]+)$/', $argument, $matches)) {
-                $query .= ' AND s.description LIKE ?';
-                $params[] = '%' . $matches[1] . '%';
+                $query .= ' AND s.description LIKE :service';
+                $params['service'] = '%' . $matches[1] . '%';
             } elseif (preg_match('/^status=([\w,-]+)$/', $argument, $matches)) {
                 $status = explode(',', $matches[1]);
                 $filterStatus = '';
@@ -117,8 +117,11 @@ class Service extends AbstractCommand
 
         $result = array();
         $stmt = $this->module->getDb('storage')->prepare($query);
-        $res = $this->module->getDb('storage')->execute($stmt, $params);
-        while ($row = $res->fetchRow()) {
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->execute();
+        while ($row = $stmt->fetch()) {
             $dateNow = new \Datetime();
             $dateLastChange = new \Datetime();
             $dateLastChange->setTimestamp($row['last_hard_state_change']);

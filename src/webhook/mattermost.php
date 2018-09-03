@@ -29,7 +29,7 @@ use \ChatOpsModule\Engine\Mattermost;
 header('Content-Type: application/json');
 
 try {
-    $chatops = new Module(_CENTREON_PATH_, $dbCentreon, $dbCentreonStorage);
+    $chatops = new Module(_CENTREON_PATH_, $dependencyInjector);
     $registry = $chatops->getCommandRegistry();
     $commandExec = new CommandExec($registry, $chatops);
     $client = new Mattermost($chatops, $commandExec);

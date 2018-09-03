@@ -56,14 +56,13 @@ class Module
    * Constructor
    *
    * @param string $centreonPath The base path of Centreon Web
-   * @param CentreonDB $dbCentreon The configuration database
-   * @param CentreonDB $dbCentreonStorage The realtime database
+   * @param Pimple\Container $diCentreon The configuration database
    */
-    public function __construct($centreonPath, $dbCentreon, $dbCentreonStorage)
+    public function __construct($centreonPath, $diCentreon)
     {
         $this->centreonPath = $centreonPath;
-        $this->dbCentreon = $dbCentreon;
-        $this->dbCentreonStorage = $dbCentreonStorage;
+        $this->dbCentreon = $diCentreon['configuration_db'];
+        $this->dbCentreonStorage = $diCentreon['realtime_db'];
 
         $this->loadConfiguration();
     }
@@ -74,11 +73,13 @@ class Module
     protected function loadConfiguration()
     {
         $query = 'SELECT config_key, config_value FROM mod_chatops_config';
-        $res = $this->dbCentreon->query($query);
-        if (\PEAR::isError($res)) {
+        try {
+            $res = $this->dbCentreon->query($query);
+        } catch (\PDOException $e) {
+            error_log($e->getMessage());
             throw new \Exception('Error during execute query');
         }
-        while ($row = $res->fetchRow()) {
+        while ($row = $res->fetch()) {
             $this->config[$row['config_key']] = json_decode($row['config_value'], true);
         }
     }
@@ -145,14 +146,20 @@ class Module
     public function saveConfig()
     {
         $queryDelete = 'DELETE FROM mod_chatops_config';
-        $res = $this->dbCentreon->query($queryDelete);
-        if (\PEAR::isError($res)) {
+        try {
+            $res = $this->dbCentreon->query($queryDelete);
+        } catch (\PDOException $e) {
+            error_log($e->getMessage());
             throw new \Exception('Error during execute query');
         }
-        $stmt = $this->dbCentreon->prepare('INSERT INTO mod_chatops_config (config_key, config_value) VALUES (?, ?)');
+        $stmt = $this->dbCentreon->prepare('INSERT INTO mod_chatops_config (config_key, config_value) VALUES (:key, :value)');
         foreach ($this->config as $key => $value) {
-            $res = $this->dbCentreon->execute($stmt, array($key, json_encode($value)));
-            if (\PEAR::isError($res)) {
+            $stmt->bindValue(':key', $key);
+            $stmt->bindValue(':value', json_encode($value));
+            try {
+                $stmt->execute();
+            } catch (\PDOException $e) {
+                error_log($e->getMessage());
                 throw new \Exception('Error during execute query');
             }
         }
@@ -185,13 +192,17 @@ class Module
     public function validateToken($token, $clientType)
     {
         $stmt = $this->dbCentreon->prepare(
-            'SELECT COUNT(*) as nb FROM mod_chatops_token WHERE active = 1 AND token = ? AND client = ?'
+            'SELECT COUNT(*) as nb FROM mod_chatops_token WHERE active = 1 AND token = :token AND client = :client'
         );
-        $res = $this->dbCentreon->execute($stmt, array($token, $clientType));
-        if (\PEAR::isError($res)) {
+        $stmt->bindValue(':token', $token);
+        $stmt->bindValue(':client', $clientType);
+        try {
+            $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log($e->getMessage());
             throw new \Exception('Error during execute query');
         }
-        $row = $res->fetchRow();
+        $row = $stmt->fetch();
         if ($row['nb'] != 1) {
             return false;
         }
@@ -206,12 +217,14 @@ class Module
    */
     public function getListToken($hide = false)
     {
-        $res = $this->dbCentreon->query('SELECT id, token, client, active, create_at FROM mod_chatops_token');
-        if (\PEAR::isError($res)) {
+        try {
+            $res = $this->dbCentreon->query('SELECT id, token, client, active, create_at FROM mod_chatops_token');
+        } catch (\PDOException $e) {
+            error_log($e->getMessage());
             throw new \Exception('Error during execute query');
         }
         $result = array();
-        while ($row = $res->fetchRow()) {
+        while ($row = $res->fetch()) {
             if ($hide) {
                 $start = substr($row['token'], 0, 3);
                 $end = substr($row['token'], -3);
@@ -233,9 +246,14 @@ class Module
     public function addToken($client, $token, $activate = false)
     {
         $act = $activate ? 1 : 0;
-        $stmt = $this->dbCentreon->prepare('INSERT INTO mod_chatops_token (client, token, active) VALUES (?, ?, ?)');
-        $res = $this->dbCentreon->execute($stmt, array($client, $token, $act));
-        if (\PEAR::isError($res)) {
+        $stmt = $this->dbCentreon->prepare('INSERT INTO mod_chatops_token (client, token, active) VALUES (:client, :token, :activate)');
+        $stmt->bindValue(':client', $client);
+        $stmt->bindValue(':token', $token);
+        $stmt->bindValue(':activate', $activate ? 1 : 0);
+        try {
+            $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log($e->getMessage());
             throw new \Exception('Error during execute query');
         }
     }
@@ -249,9 +267,13 @@ class Module
     public function setActivateToken($tokenId, $activate)
     {
         $act = $activate ? 1 : 0;
-        $stmt = $this->dbCentreon->prepare('UPDATE mod_chatops_token SET active = ? WHERE id = ?');
-        $res = $this->dbCentreon->execute($stmt, array($act, $tokenId));
-        if (\PEAR::isError($res)) {
+        $stmt = $this->dbCentreon->prepare('UPDATE mod_chatops_token SET active = :activate WHERE id = :id');
+        $stmt->bindValue(':activate', $activate ? 1 : 0);
+        $stmt->bindValue(':id', $tokenId);
+        try {
+            $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log($e->getMessage());
             throw new \Exception('Error during execute query');
         }
     }
@@ -263,9 +285,12 @@ class Module
    */
     public function deleteToken($tokenId)
     {
-        $stmt = $this->dbCentreon->prepare('DELETE FROM mod_chatops_token WHERE id = ?');
-        $res = $this->dbCentreon->execute($stmt, array($tokenId));
-        if (\PEAR::isError($res)) {
+        $stmt = $this->dbCentreon->prepare('DELETE FROM mod_chatops_token WHERE id = :id');
+        $stmt->bindValue(':id', $tokenId);
+        try {
+            $res = $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log($e->getMessage());
             throw new \Exception('Error during execute query');
         }
     }

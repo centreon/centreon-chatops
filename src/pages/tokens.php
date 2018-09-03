@@ -27,7 +27,7 @@ if (!isset($centreon)) {
     die();
 }
 
-$chatOps = new Module(_CENTREON_PATH_, $pearDB, $pearDBO);
+$chatOps = new Module(_CENTREON_PATH_, $dependencyInjector);
 
 $errormsg = '';
 

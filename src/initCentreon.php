@@ -19,6 +19,7 @@
  * limitations under the License.
  */
 
+require_once realpath(__DIR__ . '/../../../bootstrap.php');
 require_once realpath(__DIR__ . '/../../../config/centreon.config.php');
 
 /* Add a centreon autoloader */
@@ -33,6 +34,3 @@ spl_autoload_register(function ($class) {
         }
     }
 });
-
-$dbCentreon = new CentreonDB();
-$dbCentreonStorage = new CentreonDB('centstorage');
